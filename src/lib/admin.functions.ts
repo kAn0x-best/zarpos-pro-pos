@@ -174,9 +174,9 @@ export const setCompanyState = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     await assertSuperAdmin(context.supabase, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const patch: Record<string, unknown> = {};
-    if (data.isActive !== undefined) patch["is_active"] = data.isActive;
-    if (data.plan) patch["subscription_plan"] = data.plan;
+    const patch: { is_active?: boolean; subscription_plan?: string } = {};
+    if (data.isActive !== undefined) patch.is_active = data.isActive;
+    if (data.plan) patch.subscription_plan = data.plan;
     const { error } = await supabaseAdmin.from("companies").update(patch).eq("id", data.companyId);
     if (error) throw new Error(error.message);
     return { ok: true };
