@@ -12,8 +12,7 @@ Arayüz profesyonel ve sade olmalıdır. Sidebar (Yan Menü), Navbar (Üst Menü
 1. Kimlik Doğrulama ve Rol Tabanlı Yetkilendirme (Auth & RBAC):
    - Supabase Auth entegrasyonu.
    - İlk Kurulum (Seed) Hesabı: Sistem ayağa kalktığında varsayılan olarak şu Süper Admin hesabı var olmalıdır:
-     - E-posta: superadmin@zarpos.com
-     - Şifre: superadmin2207*zarpos
+     - özel bilgi kardeş
    - Kullanıcı Rolleri: 'super_admin', 'firm_admin' (Şirket Yöneticisi), 'manager' (Müdür), 'accountant' (Muhasebeci), 'cashier' (Kasiyer).
    - Rol Yetkileri:
      - 'super_admin': Sistemdeki tüm altyapıyı yönetir. Yeni şirket/dükkan açılışı yapabilir ve bu şirketin sistemdeki ilk yöneticisini ('firm_admin') oluşturup atayabilir. Ayrıca, platformu yönetmek için "Yeni Süper Admin" hesapları da oluşturabilir.
