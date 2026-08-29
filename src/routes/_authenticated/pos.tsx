@@ -172,7 +172,7 @@ function PosPage() {
   }
 
   function openPay() {
-    if (!cart.length) return toast.error("Sepet boş.");
+    if (!cart.length) { toast.error("Sepet boş."); return; }
     setMode("cash");
     setCashInput(totals.total.toFixed(2));
     setCardInput("");
@@ -191,8 +191,8 @@ function PosPage() {
 
   async function completeSale() {
     if (!companyId) return;
-    if (mode === "credit" && !contactId) return toast.error("Veresiye için cari seçin.");
-    if (mode === "split" && remaining > 0.009) return toast.error("Ödeme tutarı eksik.");
+    if (mode === "credit" && !contactId) { toast.error("Veresiye için cari seçin."); return; }
+    if (mode === "split" && remaining > 0.009) { toast.error("Ödeme tutarı eksik."); return; }
     setSaving(true);
     try {
       const receiptNo = `F${Date.now().toString().slice(-8)}`;
