@@ -127,7 +127,7 @@ function StokPage() {
 
   async function save() {
     if (!companyId) return;
-    if (!form.name.trim()) return toast.error("Ürün adı gerekli.");
+    if (!form.name.trim()) { toast.error("Ürün adı gerekli."); return; }
     const payload = {
       company_id: companyId,
       name: form.name.trim(),
@@ -144,7 +144,7 @@ function StokPage() {
     const { error } = editing
       ? await supabase.from("products").update(payload).eq("id", editing.id)
       : await supabase.from("products").insert(payload);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success(editing ? "Ürün güncellendi." : "Ürün eklendi.");
     setOpen(false);
     void queryClient.invalidateQueries({ queryKey: ["products"] });
@@ -153,13 +153,13 @@ function StokPage() {
   async function assignBarcode(p: Product) {
     const code = generateEan13(p.id.replace(/\D/g, ""));
     const { error } = await supabase.from("products").update({ barcode: code }).eq("id", p.id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Barkod üretildi: " + code);
     void queryClient.invalidateQueries({ queryKey: ["products"] });
   }
 
   async function generateAllMissing() {
-    if (!noBarcode.length) return toast.info("Tüm ürünlerin barkodu var.");
+    if (!noBarcode.length) { toast.info("Tüm ürünlerin barkodu var."); return; }
     for (const p of noBarcode) {
       await supabase
         .from("products")
@@ -172,7 +172,7 @@ function StokPage() {
 
   function printLabels(items: Product[], copies = 1) {
     const withCode = items.filter((p) => p.barcode);
-    if (!withCode.length) return toast.error("Yazdırılacak barkodlu ürün yok.");
+    if (!withCode.length) { toast.error("Yazdırılacak barkodlu ürün yok."); return; }
     const cells = withCode
       .flatMap((p) => Array.from({ length: copies }, () => p))
       .map(
