@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCarilerRouteImport } from './routes/_authenticated/cariler'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFaturalarRouteImport } from './routes/_authenticated/faturalar'
+import { Route as AuthenticatedGiderlerRouteImport } from './routes/_authenticated/giderler'
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
 import { Route as AuthenticatedStokRouteImport } from './routes/_authenticated/stok'
 
@@ -47,6 +48,11 @@ const AuthenticatedFaturalarRoute = AuthenticatedFaturalarRouteImport.update({
   path: '/faturalar',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedGiderlerRoute = AuthenticatedGiderlerRouteImport.update({
+  id: '/giderler',
+  path: '/giderler',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPosRoute = AuthenticatedPosRouteImport.update({
   id: '/pos',
   path: '/pos',
@@ -64,6 +70,7 @@ export interface FileRoutesByFullPath {
   '/cariler': typeof AuthenticatedCarilerRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/faturalar': typeof AuthenticatedFaturalarRoute
+  '/giderler': typeof AuthenticatedGiderlerRoute
   '/pos': typeof AuthenticatedPosRoute
   '/stok': typeof AuthenticatedStokRoute
 }
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/cariler': typeof AuthenticatedCarilerRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/faturalar': typeof AuthenticatedFaturalarRoute
+  '/giderler': typeof AuthenticatedGiderlerRoute
   '/pos': typeof AuthenticatedPosRoute
   '/stok': typeof AuthenticatedStokRoute
 }
@@ -84,16 +92,31 @@ export interface FileRoutesById {
   '/_authenticated/cariler': typeof AuthenticatedCarilerRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/faturalar': typeof AuthenticatedFaturalarRoute
+  '/_authenticated/giderler': typeof AuthenticatedGiderlerRoute
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/stok': typeof AuthenticatedStokRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/auth' | '/cariler' | '/dashboard' | '/faturalar' | '/pos' | '/stok'
+    | '/'
+    | '/auth'
+    | '/cariler'
+    | '/dashboard'
+    | '/faturalar'
+    | '/giderler'
+    | '/pos'
+    | '/stok'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/' | '/auth' | '/cariler' | '/dashboard' | '/faturalar' | '/pos' | '/stok'
+    | '/'
+    | '/auth'
+    | '/cariler'
+    | '/dashboard'
+    | '/faturalar'
+    | '/giderler'
+    | '/pos'
+    | '/stok'
   id:
     | '__root__'
     | '/'
@@ -102,6 +125,7 @@ export interface FileRouteTypes {
     | '/_authenticated/cariler'
     | '/_authenticated/dashboard'
     | '/_authenticated/faturalar'
+    | '/_authenticated/giderler'
     | '/_authenticated/pos'
     | '/_authenticated/stok'
   fileRoutesById: FileRoutesById
@@ -156,6 +180,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFaturalarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/giderler': {
+      id: '/_authenticated/giderler'
+      path: '/giderler'
+      fullPath: '/giderler'
+      preLoaderRoute: typeof AuthenticatedGiderlerRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/pos': {
       id: '/_authenticated/pos'
       path: '/pos'
@@ -177,6 +208,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCarilerRoute: typeof AuthenticatedCarilerRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFaturalarRoute: typeof AuthenticatedFaturalarRoute
+  AuthenticatedGiderlerRoute: typeof AuthenticatedGiderlerRoute
   AuthenticatedPosRoute: typeof AuthenticatedPosRoute
   AuthenticatedStokRoute: typeof AuthenticatedStokRoute
 }
@@ -185,6 +217,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCarilerRoute: AuthenticatedCarilerRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFaturalarRoute: AuthenticatedFaturalarRoute,
+  AuthenticatedGiderlerRoute: AuthenticatedGiderlerRoute,
   AuthenticatedPosRoute: AuthenticatedPosRoute,
   AuthenticatedStokRoute: AuthenticatedStokRoute,
 }
