@@ -42,7 +42,7 @@ export const Route = createFileRoute("/_authenticated/faturalar")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: FaturalarPage;
+  component: FaturalarPage,
 });
 
 type Contact = { id: string; name: string; type: string; tax_office: string | null; tax_number: string | null; address: string | null };
