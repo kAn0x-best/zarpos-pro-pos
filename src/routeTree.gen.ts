@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedAyarlarRouteImport } from './routes/_authenticated/ayarlar'
 import { Route as AuthenticatedCarilerRouteImport } from './routes/_authenticated/cariler'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFaturalarRouteImport } from './routes/_authenticated/faturalar'
@@ -32,6 +33,11 @@ const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedAyarlarRoute = AuthenticatedAyarlarRouteImport.update({
+  id: '/ayarlar',
+  path: '/ayarlar',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCarilerRoute = AuthenticatedCarilerRouteImport.update({
   id: '/cariler',
@@ -67,6 +73,7 @@ const AuthenticatedStokRoute = AuthenticatedStokRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/ayarlar': typeof AuthenticatedAyarlarRoute
   '/cariler': typeof AuthenticatedCarilerRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/faturalar': typeof AuthenticatedFaturalarRoute
@@ -77,6 +84,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/ayarlar': typeof AuthenticatedAyarlarRoute
   '/cariler': typeof AuthenticatedCarilerRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/faturalar': typeof AuthenticatedFaturalarRoute
@@ -89,6 +97,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/ayarlar': typeof AuthenticatedAyarlarRoute
   '/_authenticated/cariler': typeof AuthenticatedCarilerRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/faturalar': typeof AuthenticatedFaturalarRoute
@@ -101,6 +110,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/ayarlar'
     | '/cariler'
     | '/dashboard'
     | '/faturalar'
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/ayarlar'
     | '/cariler'
     | '/dashboard'
     | '/faturalar'
@@ -122,6 +133,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/ayarlar'
     | '/_authenticated/cariler'
     | '/_authenticated/dashboard'
     | '/_authenticated/faturalar'
@@ -158,6 +170,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/ayarlar': {
+      id: '/_authenticated/ayarlar'
+      path: '/ayarlar'
+      fullPath: '/ayarlar'
+      preLoaderRoute: typeof AuthenticatedAyarlarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/cariler': {
       id: '/_authenticated/cariler'
@@ -205,6 +224,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAyarlarRoute: typeof AuthenticatedAyarlarRoute
   AuthenticatedCarilerRoute: typeof AuthenticatedCarilerRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFaturalarRoute: typeof AuthenticatedFaturalarRoute
@@ -214,6 +234,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAyarlarRoute: AuthenticatedAyarlarRoute,
   AuthenticatedCarilerRoute: AuthenticatedCarilerRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFaturalarRoute: AuthenticatedFaturalarRoute,
