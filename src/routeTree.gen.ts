@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedCarilerRouteImport } from './routes/_authenticated/cariler'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedFaturalarRouteImport } from './routes/_authenticated/faturalar'
 import { Route as AuthenticatedPosRouteImport } from './routes/_authenticated/pos'
 import { Route as AuthenticatedStokRouteImport } from './routes/_authenticated/stok'
 
@@ -41,6 +42,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFaturalarRoute = AuthenticatedFaturalarRouteImport.update({
+  id: '/faturalar',
+  path: '/faturalar',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedPosRoute = AuthenticatedPosRouteImport.update({
   id: '/pos',
   path: '/pos',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/cariler': typeof AuthenticatedCarilerRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/faturalar': typeof AuthenticatedFaturalarRoute
   '/pos': typeof AuthenticatedPosRoute
   '/stok': typeof AuthenticatedStokRoute
 }
@@ -65,6 +72,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/cariler': typeof AuthenticatedCarilerRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/faturalar': typeof AuthenticatedFaturalarRoute
   '/pos': typeof AuthenticatedPosRoute
   '/stok': typeof AuthenticatedStokRoute
 }
@@ -75,14 +83,17 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/cariler': typeof AuthenticatedCarilerRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/faturalar': typeof AuthenticatedFaturalarRoute
   '/_authenticated/pos': typeof AuthenticatedPosRoute
   '/_authenticated/stok': typeof AuthenticatedStokRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/cariler' | '/dashboard' | '/pos' | '/stok'
+  fullPaths:
+    '/' | '/auth' | '/cariler' | '/dashboard' | '/faturalar' | '/pos' | '/stok'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/cariler' | '/dashboard' | '/pos' | '/stok'
+  to:
+    '/' | '/auth' | '/cariler' | '/dashboard' | '/faturalar' | '/pos' | '/stok'
   id:
     | '__root__'
     | '/'
@@ -90,6 +101,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/cariler'
     | '/_authenticated/dashboard'
+    | '/_authenticated/faturalar'
     | '/_authenticated/pos'
     | '/_authenticated/stok'
   fileRoutesById: FileRoutesById
@@ -137,6 +149,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/faturalar': {
+      id: '/_authenticated/faturalar'
+      path: '/faturalar'
+      fullPath: '/faturalar'
+      preLoaderRoute: typeof AuthenticatedFaturalarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/pos': {
       id: '/_authenticated/pos'
       path: '/pos'
@@ -157,6 +176,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedCarilerRoute: typeof AuthenticatedCarilerRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFaturalarRoute: typeof AuthenticatedFaturalarRoute
   AuthenticatedPosRoute: typeof AuthenticatedPosRoute
   AuthenticatedStokRoute: typeof AuthenticatedStokRoute
 }
@@ -164,6 +184,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCarilerRoute: AuthenticatedCarilerRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFaturalarRoute: AuthenticatedFaturalarRoute,
   AuthenticatedPosRoute: AuthenticatedPosRoute,
   AuthenticatedStokRoute: AuthenticatedStokRoute,
 }
