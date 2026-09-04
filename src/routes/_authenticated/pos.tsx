@@ -93,6 +93,35 @@ function PosPage() {
   const [contactId, setContactId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [receipt, setReceipt] = useState<string | null>(null);
+  const [openShiftDialog, setOpenShiftDialog] = useState(false);
+  const [openingCash, setOpeningCash] = useState("0");
+  const [closeDialog, setCloseDialog] = useState(false);
+  const [countedCash, setCountedCash] = useState("");
+  const [closing, setClosing] = useState(false);
+  const [zReport, setZReport] = useState<string | null>(null);
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["pos-accounts", companyId],
+    enabled: !!companyId,
+    queryFn: () => ensureAccounts(companyId!),
+  });
+
+  const { data: shift = null, refetch: refetchShift } = useQuery({
+    queryKey: ["pos-shift", companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("cash_shifts")
+        .select("*")
+        .eq("company_id", companyId!)
+        .eq("status", "open")
+        .order("opened_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
+
 
   const { data: products = [] } = useQuery({
     queryKey: ["pos-products", companyId],
