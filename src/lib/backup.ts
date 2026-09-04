@@ -44,6 +44,25 @@ export function backupRowCount(file: BackupFile): number {
   return Object.values(file.tables).reduce((a, r) => a + (r?.length ?? 0), 0);
 }
 
+export type BackupVerification = { ok: boolean; rows: number; issues: string[] };
+
+/** Yedek dosyasının gerçekten bu şirketin verisini içerdiğini doğrular. */
+export function verifyBackup(file: BackupFile, companyId: string): BackupVerification {
+  const issues: string[] = [];
+  if (file.companyId !== companyId) issues.push("Yedek başka bir şirkete ait.");
+  for (const t of BACKUP_TABLES) {
+    const rows = (file.tables[t] ?? []) as Record<string, unknown>[];
+    if (!Array.isArray(file.tables[t])) {
+      issues.push(`${t}: tablo eksik.`);
+      continue;
+    }
+    const foreign = rows.filter((r) => r["company_id"] && r["company_id"] !== companyId).length;
+    if (foreign > 0) issues.push(`${t}: ${foreign} kayıt farklı şirkete ait.`);
+  }
+  return { ok: issues.length === 0, rows: backupRowCount(file), issues };
+}
+
+
 export function parseBackup(text: string): BackupFile {
   const parsed = JSON.parse(text) as BackupFile;
   if (parsed?.format !== "zarsoft-backup" || !parsed.tables) {
