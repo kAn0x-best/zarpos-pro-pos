@@ -1,13 +1,34 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, CreditCard, Minus, Plus, Printer, ScanBarcode, Split, Trash2, UserPlus } from "lucide-react";
+import {
+  Banknote,
+  CreditCard,
+  Landmark,
+  LockKeyhole,
+  Minus,
+  Plus,
+  Printer,
+  ScanBarcode,
+  Split,
+  Trash2,
+  UnlockKeyhole,
+  UserPlus,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
-import { money, num } from "@/lib/format";
+import { dateTimeTR, downloadJson, money, num } from "@/lib/format";
 import { buildReceiptText, printReceiptText, type ReceiptData } from "@/lib/receipt";
+import {
+  ensureAccounts,
+  postSalePayments,
+  postShiftClosing,
+  pickAccount,
+  type Account,
+} from "@/lib/accounts";
+import { createBackup, verifyBackup } from "@/lib/backup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 
 export const Route = createFileRoute("/_authenticated/pos")({
   head: () => ({
