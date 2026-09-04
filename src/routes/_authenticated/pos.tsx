@@ -483,7 +483,35 @@ function PosPage() {
 
   return (
     <AppShell title="POS Kasa" subtitle="Barkod okutun veya ürün seçin">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
+        <div className="flex flex-wrap items-center gap-5 text-sm">
+          <div className="flex items-center gap-2">
+            <Banknote className="size-4 text-primary" />
+            <span className="text-muted-foreground">Kasa:</span>
+            <strong>{money(pickAccount(accounts, "cash")?.balance)}</strong>
+          </div>
+          <div className="flex items-center gap-2">
+            <Landmark className="size-4 text-primary" />
+            <span className="text-muted-foreground">Banka:</span>
+            <strong>{money(pickAccount(accounts, "bank")?.balance)}</strong>
+          </div>
+          <span className="text-muted-foreground">
+            {shift ? `Vardiya açık — ${dateTimeTR(shift.opened_at)}` : "Vardiya kapalı"}
+          </span>
+        </div>
+        {shift ? (
+          <Button variant="outline" onClick={() => { setCountedCash(""); setCloseDialog(true); }}>
+            <LockKeyhole className="size-4" /> Gün Sonu (Z-Raporu)
+          </Button>
+        ) : (
+          <Button onClick={() => setOpenShiftDialog(true)}>
+            <UnlockKeyhole className="size-4" /> Vardiya Aç
+          </Button>
+        )}
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
+
         <div className="space-y-4">
           <form onSubmit={onScan} className="flex gap-2">
             <div className="relative flex-1">
