@@ -363,6 +363,8 @@ function PosPage() {
         .insert({
           company_id: companyId,
           cashier_id: me?.userId ?? null,
+          shift_id: shift?.id ?? null,
+
           contact_id: contactId || null,
           receipt_no: receiptNo,
           subtotal: Number(totals.subtotal.toFixed(2)),
