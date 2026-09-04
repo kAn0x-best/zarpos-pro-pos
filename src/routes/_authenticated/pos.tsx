@@ -335,6 +335,8 @@ function PosPage() {
 
   function openPay() {
     if (!cart.length) { toast.error("Sepet boş."); return; }
+    if (!shift) { toast.error("Önce vardiya açın."); return; }
+
     setMode("cash");
     setCashInput(totals.total.toFixed(2));
     setCardInput("");
