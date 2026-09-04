@@ -423,7 +423,18 @@ function PosPage() {
           .eq("id", contactId);
       }
 
+      // Nakit → Kasa, Kart → Banka bakiyesine otomatik yansıma
+      await postSalePayments({
+        companyId,
+        accounts: accounts as Account[],
+        paidCash,
+        paidCard,
+        receiptNo,
+      });
+      void queryClient.invalidateQueries({ queryKey: ["pos-accounts"] });
+
       const data: ReceiptData = {
+
         companyName: me?.company?.name ?? "ZarSoft",
         taxOffice: me?.company?.tax_office ?? null,
         taxNumber: me?.company?.tax_number ?? null,
