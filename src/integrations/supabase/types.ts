@@ -14,6 +14,98 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_movements: {
+        Row: {
+          account_id: string
+          amount: number
+          company_id: string
+          created_at: string
+          description: string | null
+          direction: string
+          id: string
+          reference: string | null
+          source: string
+        }
+        Insert: {
+          account_id: string
+          amount?: number
+          company_id: string
+          created_at?: string
+          description?: string | null
+          direction?: string
+          id?: string
+          reference?: string | null
+          source?: string
+        }
+        Update: {
+          account_id?: string
+          amount?: number
+          company_id?: string
+          created_at?: string
+          description?: string | null
+          direction?: string
+          id?: string
+          reference?: string | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_movements_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_movements_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accounts: {
+        Row: {
+          balance: number
+          company_id: string
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          company_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accounts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_shifts: {
         Row: {
           closed_at: string | null

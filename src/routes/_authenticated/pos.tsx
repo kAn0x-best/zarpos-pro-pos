@@ -1,13 +1,34 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Banknote, CreditCard, Minus, Plus, Printer, ScanBarcode, Split, Trash2, UserPlus } from "lucide-react";
+import {
+  Banknote,
+  CreditCard,
+  Landmark,
+  LockKeyhole,
+  Minus,
+  Plus,
+  Printer,
+  ScanBarcode,
+  Split,
+  Trash2,
+  UnlockKeyhole,
+  UserPlus,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
-import { money, num } from "@/lib/format";
+import { dateTimeTR, downloadJson, money, num } from "@/lib/format";
 import { buildReceiptText, printReceiptText, type ReceiptData } from "@/lib/receipt";
+import {
+  ensureAccounts,
+  postSalePayments,
+  postShiftClosing,
+  pickAccount,
+  type Account,
+} from "@/lib/accounts";
+import { createBackup, verifyBackup } from "@/lib/backup";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +40,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
 
 export const Route = createFileRoute("/_authenticated/pos")({
   head: () => ({
@@ -71,6 +93,35 @@ function PosPage() {
   const [contactId, setContactId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [receipt, setReceipt] = useState<string | null>(null);
+  const [openShiftDialog, setOpenShiftDialog] = useState(false);
+  const [openingCash, setOpeningCash] = useState("0");
+  const [closeDialog, setCloseDialog] = useState(false);
+  const [countedCash, setCountedCash] = useState("");
+  const [closing, setClosing] = useState(false);
+  const [zReport, setZReport] = useState<string | null>(null);
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ["pos-accounts", companyId],
+    enabled: !!companyId,
+    queryFn: () => ensureAccounts(companyId!),
+  });
+
+  const { data: shift = null, refetch: refetchShift } = useQuery({
+    queryKey: ["pos-shift", companyId],
+    enabled: !!companyId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("cash_shifts")
+        .select("*")
+        .eq("company_id", companyId!)
+        .eq("status", "open")
+        .order("opened_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
+
 
   const { data: products = [] } = useQuery({
     queryKey: ["pos-products", companyId],
@@ -100,6 +151,117 @@ function PosPage() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  async function startShift() {
+    if (!companyId || !me) return;
+    const { error } = await supabase.from("cash_shifts").insert({
+      company_id: companyId,
+      user_id: me.userId,
+      opening_cash: num(openingCash),
+      status: "open",
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setOpenShiftDialog(false);
+    await refetchShift();
+    toast.success("Vardiya açıldı.");
+  }
+
+  async function closeShift() {
+    if (!companyId || !shift) return;
+    setClosing(true);
+    try {
+      const { data: shiftSales } = await supabase
+        .from("sales")
+        .select("total, paid_cash, paid_card, paid_credit")
+        .eq("shift_id", shift.id);
+      const rows = shiftSales ?? [];
+      const sum = (k: "total" | "paid_cash" | "paid_card" | "paid_credit") =>
+        rows.reduce((a, r) => a + num(r[k]), 0);
+      const expected = num(shift.opening_cash) + sum("paid_cash");
+      const counted = num(countedCash);
+      const difference = Number((counted - expected).toFixed(2));
+
+      const { error } = await supabase
+        .from("cash_shifts")
+        .update({
+          status: "closed",
+          closed_at: new Date().toISOString(),
+          counted_cash: counted,
+          expected_cash: Number(expected.toFixed(2)),
+          difference,
+        })
+        .eq("id", shift.id);
+      if (error) throw error;
+
+      // Muhasebe kaydı: kasa kapanışı ve fark hesaba işlenir
+      await postShiftClosing({ companyId, accounts, shiftId: shift.id, difference });
+
+      const cashAcc = pickAccount(accounts, "cash");
+      const bankAcc = pickAccount(accounts, "bank");
+      const lines = [
+        "".padEnd(32, "="),
+        "        GÜN SONU Z-RAPORU",
+        "".padEnd(32, "="),
+        me?.company?.name ?? "ZarSoft",
+        `Kasiyer : ${me?.fullName ?? "-"}`,
+        `Açılış  : ${dateTimeTR(shift.opened_at)}`,
+        `Kapanış : ${dateTimeTR(new Date())}`,
+        "".padEnd(32, "-"),
+        `Fiş adedi        : ${rows.length}`,
+        `Toplam satış     : ${money(sum("total"))}`,
+        `Nakit            : ${money(sum("paid_cash"))}`,
+        `Kart (banka)     : ${money(sum("paid_card"))}`,
+        `Veresiye         : ${money(sum("paid_credit"))}`,
+        "".padEnd(32, "-"),
+        `Açılış kasası    : ${money(shift.opening_cash)}`,
+        `Beklenen kasa    : ${money(expected)}`,
+        `Sayılan kasa     : ${money(counted)}`,
+        `Fark             : ${money(difference)}`,
+        "".padEnd(32, "-"),
+        `${cashAcc?.name ?? "Kasa"} bakiye : ${money(cashAcc?.balance)}`,
+        `${bankAcc?.name ?? "Banka"} bakiye: ${money(bankAcc?.balance)}`,
+        "".padEnd(32, "="),
+      ];
+      setZReport(lines.join("\n"));
+
+      // Gün sonu otomatik yedek tetikleyicisi
+      const { data: settings } = await supabase
+        .from("company_settings")
+        .select("backup_on_zreport")
+        .eq("company_id", companyId)
+        .maybeSingle();
+      if (settings?.backup_on_zreport) {
+        const file = await createBackup(companyId, me?.company?.name ?? "Şirket");
+        const check = verifyBackup(file, companyId);
+        if (!check.ok) {
+          toast.error("Yedek doğrulaması başarısız: " + check.issues.join(" "));
+        } else {
+          const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+          downloadJson(`zarsoft-zraporu-yedek-${stamp}.json`, file);
+          await supabase
+            .from("company_settings")
+            .update({ last_backup_at: new Date().toISOString() })
+            .eq("company_id", companyId);
+          toast.success(`Gün sonu yedeği indirildi ve doğrulandı — ${check.rows} kayıt.`);
+        }
+      }
+
+      setCloseDialog(false);
+      setCountedCash("");
+      await refetchShift();
+      void queryClient.invalidateQueries({ queryKey: ["pos-accounts"] });
+      toast.success("Vardiya kapatıldı, muhasebe kaydı oluşturuldu.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Kapanış başarısız.");
+    } finally {
+      setClosing(false);
+    }
+  }
+
+
 
   const filtered = useMemo(() => {
     const q = term.trim().toLocaleLowerCase("tr");
@@ -173,6 +335,8 @@ function PosPage() {
 
   function openPay() {
     if (!cart.length) { toast.error("Sepet boş."); return; }
+    if (!shift) { toast.error("Önce vardiya açın."); return; }
+
     setMode("cash");
     setCashInput(totals.total.toFixed(2));
     setCardInput("");
@@ -201,6 +365,8 @@ function PosPage() {
         .insert({
           company_id: companyId,
           cashier_id: me?.userId ?? null,
+          shift_id: shift?.id ?? null,
+
           contact_id: contactId || null,
           receipt_no: receiptNo,
           subtotal: Number(totals.subtotal.toFixed(2)),
@@ -259,7 +425,18 @@ function PosPage() {
           .eq("id", contactId);
       }
 
+      // Nakit → Kasa, Kart → Banka bakiyesine otomatik yansıma
+      await postSalePayments({
+        companyId,
+        accounts: accounts as Account[],
+        paidCash,
+        paidCard,
+        receiptNo,
+      });
+      void queryClient.invalidateQueries({ queryKey: ["pos-accounts"] });
+
       const data: ReceiptData = {
+
         companyName: me?.company?.name ?? "ZarSoft",
         taxOffice: me?.company?.tax_office ?? null,
         taxNumber: me?.company?.tax_number ?? null,
@@ -306,7 +483,35 @@ function PosPage() {
 
   return (
     <AppShell title="POS Kasa" subtitle="Barkod okutun veya ürün seçin">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-4">
+        <div className="flex flex-wrap items-center gap-5 text-sm">
+          <div className="flex items-center gap-2">
+            <Banknote className="size-4 text-primary" />
+            <span className="text-muted-foreground">Kasa:</span>
+            <strong>{money(pickAccount(accounts, "cash")?.balance)}</strong>
+          </div>
+          <div className="flex items-center gap-2">
+            <Landmark className="size-4 text-primary" />
+            <span className="text-muted-foreground">Banka:</span>
+            <strong>{money(pickAccount(accounts, "bank")?.balance)}</strong>
+          </div>
+          <span className="text-muted-foreground">
+            {shift ? `Vardiya açık — ${dateTimeTR(shift.opened_at)}` : "Vardiya kapalı"}
+          </span>
+        </div>
+        {shift ? (
+          <Button variant="outline" onClick={() => { setCountedCash(""); setCloseDialog(true); }}>
+            <LockKeyhole className="size-4" /> Gün Sonu (Z-Raporu)
+          </Button>
+        ) : (
+          <Button onClick={() => setOpenShiftDialog(true)}>
+            <UnlockKeyhole className="size-4" /> Vardiya Aç
+          </Button>
+        )}
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-[1fr_380px]">
+
         <div className="space-y-4">
           <form onSubmit={onScan} className="flex gap-2">
             <div className="relative flex-1">
@@ -483,6 +688,79 @@ function PosPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={openShiftDialog} onOpenChange={setOpenShiftDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Vardiya Aç</DialogTitle>
+            <DialogDescription>Kasadaki açılış nakit tutarını girin.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Açılış Nakiti</Label>
+            <Input
+              value={openingCash}
+              onChange={(e) => setOpeningCash(e.target.value)}
+              inputMode="decimal"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenShiftDialog(false)}>
+              Vazgeç
+            </Button>
+            <Button onClick={startShift}>Vardiyayı Aç</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={closeDialog} onOpenChange={setCloseDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gün Sonu Kapanışı</DialogTitle>
+            <DialogDescription>
+              Sayılan nakdi girin; kapanış muhasebe kaydı oluşturulur ve ayarlarda açıksa otomatik
+              yedek indirilir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Sayılan Nakit</Label>
+            <Input
+              value={countedCash}
+              onChange={(e) => setCountedCash(e.target.value)}
+              inputMode="decimal"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloseDialog(false)}>
+              Vazgeç
+            </Button>
+            <Button onClick={closeShift} disabled={closing}>
+              {closing ? "Kapatılıyor…" : "Kapat ve Z-Raporu Al"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!zReport} onOpenChange={(o) => !o && setZReport(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Z-Raporu</DialogTitle>
+            <DialogDescription>Gün sonu kasa ve satış özeti.</DialogDescription>
+          </DialogHeader>
+          <pre className="max-h-[50vh] overflow-auto rounded-md bg-muted p-3 font-mono text-[11px] whitespace-pre">
+            {zReport}
+          </pre>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setZReport(null)}>
+              Kapat
+            </Button>
+            <Button onClick={() => zReport && printReceiptText(zReport, "Z-Raporu")}>
+              <Printer className="mr-2 size-4" /> Yazdır
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
       <Dialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)}>
         <DialogContent>

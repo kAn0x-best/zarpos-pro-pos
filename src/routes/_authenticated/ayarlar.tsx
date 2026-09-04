@@ -18,7 +18,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { AppShell } from "@/components/AppShell";
 import { dateTimeTR, downloadJson, ROLE_LABELS } from "@/lib/format";
-import { createBackup, backupRowCount, parseBackup, restoreBackup } from "@/lib/backup";
+import { createBackup, parseBackup, restoreBackup, verifyBackup } from "@/lib/backup";
 import { createCompanyUser, deleteCompanyUser } from "@/lib/admin.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,10 +83,20 @@ function AyarlarPage() {
         </div>
       ) : (
         <Tabs defaultValue="company">
-          <TabsList>
-            <TabsTrigger value="company">Şirket</TabsTrigger>
-            <TabsTrigger value="staff">Personel</TabsTrigger>
-            <TabsTrigger value="backup">Yedekleme</TabsTrigger>
+          <TabsList className="h-auto flex-wrap gap-2 rounded-xl bg-transparent p-0">
+            {[
+              { v: "company", l: "Şirket" },
+              { v: "staff", l: "Personel" },
+              { v: "backup", l: "Yedekleme" },
+            ].map((t) => (
+              <TabsTrigger
+                key={t.v}
+                value={t.v}
+                className="rounded-xl border bg-card px-6 py-2.5 text-sm font-medium shadow-sm transition-colors data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
+                {t.l}
+              </TabsTrigger>
+            ))}
           </TabsList>
           <TabsContent value="company" className="mt-4">
             <CompanyTab />
@@ -407,11 +417,17 @@ function BackupTab({ companyId, companyName }: { companyId: string; companyName:
     setBusy("backup");
     try {
       const file = await createBackup(companyId, companyName);
+      const check = verifyBackup(file, companyId);
+      if (!check.ok) {
+        toast.error("Yedek doğrulaması başarısız: " + check.issues.join(" "));
+        setBusy("none");
+        return;
+      }
       const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
       downloadJson(`zarsoft-yedek-${stamp}.json`, file);
       await patch({ last_backup_at: new Date().toISOString() });
       toast.success(
-        `${auto ? "Otomatik yedek" : "Yedek"} indirildi — ${backupRowCount(file)} kayıt.`,
+        `${auto ? "Otomatik yedek" : "Yedek"} indirildi ve doğrulandı — ${check.rows} kayıt.`,
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Yedek alınamadı.");
