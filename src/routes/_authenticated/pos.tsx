@@ -152,6 +152,117 @@ function PosPage() {
     inputRef.current?.focus();
   }, []);
 
+  async function startShift() {
+    if (!companyId || !me) return;
+    const { error } = await supabase.from("cash_shifts").insert({
+      company_id: companyId,
+      user_id: me.userId,
+      opening_cash: num(openingCash),
+      status: "open",
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setOpenShiftDialog(false);
+    await refetchShift();
+    toast.success("Vardiya açıldı.");
+  }
+
+  async function closeShift() {
+    if (!companyId || !shift) return;
+    setClosing(true);
+    try {
+      const { data: shiftSales } = await supabase
+        .from("sales")
+        .select("total, paid_cash, paid_card, paid_credit")
+        .eq("shift_id", shift.id);
+      const rows = shiftSales ?? [];
+      const sum = (k: "total" | "paid_cash" | "paid_card" | "paid_credit") =>
+        rows.reduce((a, r) => a + num(r[k]), 0);
+      const expected = num(shift.opening_cash) + sum("paid_cash");
+      const counted = num(countedCash);
+      const difference = Number((counted - expected).toFixed(2));
+
+      const { error } = await supabase
+        .from("cash_shifts")
+        .update({
+          status: "closed",
+          closed_at: new Date().toISOString(),
+          counted_cash: counted,
+          expected_cash: Number(expected.toFixed(2)),
+          difference,
+        })
+        .eq("id", shift.id);
+      if (error) throw error;
+
+      // Muhasebe kaydı: kasa kapanışı ve fark hesaba işlenir
+      await postShiftClosing({ companyId, accounts, shiftId: shift.id, difference });
+
+      const cashAcc = pickAccount(accounts, "cash");
+      const bankAcc = pickAccount(accounts, "bank");
+      const lines = [
+        "".padEnd(32, "="),
+        "        GÜN SONU Z-RAPORU",
+        "".padEnd(32, "="),
+        me?.company?.name ?? "ZarSoft",
+        `Kasiyer : ${me?.fullName ?? "-"}`,
+        `Açılış  : ${dateTimeTR(shift.opened_at)}`,
+        `Kapanış : ${dateTimeTR(new Date())}`,
+        "".padEnd(32, "-"),
+        `Fiş adedi        : ${rows.length}`,
+        `Toplam satış     : ${money(sum("total"))}`,
+        `Nakit            : ${money(sum("paid_cash"))}`,
+        `Kart (banka)     : ${money(sum("paid_card"))}`,
+        `Veresiye         : ${money(sum("paid_credit"))}`,
+        "".padEnd(32, "-"),
+        `Açılış kasası    : ${money(shift.opening_cash)}`,
+        `Beklenen kasa    : ${money(expected)}`,
+        `Sayılan kasa     : ${money(counted)}`,
+        `Fark             : ${money(difference)}`,
+        "".padEnd(32, "-"),
+        `${cashAcc?.name ?? "Kasa"} bakiye : ${money(cashAcc?.balance)}`,
+        `${bankAcc?.name ?? "Banka"} bakiye: ${money(bankAcc?.balance)}`,
+        "".padEnd(32, "="),
+      ];
+      setZReport(lines.join("\n"));
+
+      // Gün sonu otomatik yedek tetikleyicisi
+      const { data: settings } = await supabase
+        .from("company_settings")
+        .select("backup_on_zreport")
+        .eq("company_id", companyId)
+        .maybeSingle();
+      if (settings?.backup_on_zreport) {
+        const file = await createBackup(companyId, me?.company?.name ?? "Şirket");
+        const check = verifyBackup(file, companyId);
+        if (!check.ok) {
+          toast.error("Yedek doğrulaması başarısız: " + check.issues.join(" "));
+        } else {
+          const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+          downloadJson(`zarsoft-zraporu-yedek-${stamp}.json`, file);
+          await supabase
+            .from("company_settings")
+            .update({ last_backup_at: new Date().toISOString() })
+            .eq("company_id", companyId);
+          toast.success(`Gün sonu yedeği indirildi ve doğrulandı — ${check.rows} kayıt.`);
+        }
+      }
+
+      setCloseDialog(false);
+      setCountedCash("");
+      await refetchShift();
+      void queryClient.invalidateQueries({ queryKey: ["pos-accounts"] });
+      toast.success("Vardiya kapatıldı, muhasebe kaydı oluşturuldu.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Kapanış başarısız.");
+    } finally {
+      setClosing(false);
+    }
+  }
+
+
+
   const filtered = useMemo(() => {
     const q = term.trim().toLocaleLowerCase("tr");
     if (!q) return products.slice(0, 24);
