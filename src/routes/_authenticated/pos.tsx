@@ -689,6 +689,79 @@ function PosPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={openShiftDialog} onOpenChange={setOpenShiftDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Vardiya Aç</DialogTitle>
+            <DialogDescription>Kasadaki açılış nakit tutarını girin.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Açılış Nakiti</Label>
+            <Input
+              value={openingCash}
+              onChange={(e) => setOpeningCash(e.target.value)}
+              inputMode="decimal"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpenShiftDialog(false)}>
+              Vazgeç
+            </Button>
+            <Button onClick={startShift}>Vardiyayı Aç</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={closeDialog} onOpenChange={setCloseDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Gün Sonu Kapanışı</DialogTitle>
+            <DialogDescription>
+              Sayılan nakdi girin; kapanış muhasebe kaydı oluşturulur ve ayarlarda açıksa otomatik
+              yedek indirilir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label>Sayılan Nakit</Label>
+            <Input
+              value={countedCash}
+              onChange={(e) => setCountedCash(e.target.value)}
+              inputMode="decimal"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloseDialog(false)}>
+              Vazgeç
+            </Button>
+            <Button onClick={closeShift} disabled={closing}>
+              {closing ? "Kapatılıyor…" : "Kapat ve Z-Raporu Al"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!zReport} onOpenChange={(o) => !o && setZReport(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Z-Raporu</DialogTitle>
+            <DialogDescription>Gün sonu kasa ve satış özeti.</DialogDescription>
+          </DialogHeader>
+          <pre className="max-h-[50vh] overflow-auto rounded-md bg-muted p-3 font-mono text-[11px] whitespace-pre">
+            {zReport}
+          </pre>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setZReport(null)}>
+              Kapat
+            </Button>
+            <Button onClick={() => zReport && printReceiptText(zReport, "Z-Raporu")}>
+              <Printer className="mr-2 size-4" /> Yazdır
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
+
       <Dialog open={!!receipt} onOpenChange={(o) => !o && setReceipt(null)}>
         <DialogContent>
           <DialogHeader>
